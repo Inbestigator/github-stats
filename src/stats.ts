@@ -1,33 +1,50 @@
-type RepoNode = {
+interface RepoNode {
   name: string;
   stargazerCount: number;
+  forkCount: number;
+  watchers: { totalCount: number };
+  createdAt: string;
+  pushedAt: string;
   primaryLanguage: { name: string } | null;
-};
+}
 
-type UserResponse = {
+interface UserQueryResponse {
   data: {
     user: {
       name: string | null;
       login: string;
       bio: string | null;
+      createdAt: string;
       followers: { totalCount: number };
       following: { totalCount: number };
       contributionsCollection: {
-        contributionCalendar: { totalContributions: number };
+        contributionCalendar: {
+          totalContributions: number;
+        };
       };
       repositories: {
         totalCount: number;
-        pageInfo: { hasNextPage: boolean; endCursor: string | null };
+      };
+    } | null;
+  };
+}
+
+interface RepoQueryResponse {
+  data: {
+    user: {
+      repositories: {
+        pageInfo: {
+          hasNextPage: boolean;
+          endCursor: string | null;
+        };
         nodes: RepoNode[];
       };
-    };
+    } | null;
   };
-};
+}
 
-const endpoint = "https://api.github.com/graphql";
-
-async function gql(query: string, variables: Record<string, unknown>, token: string) {
-  const res = await fetch(endpoint, {
+async function gql<T>(query: string, variables: Record<string, unknown>, token: string): Promise<T> {
+  const res = await fetch("https://api.github.com/graphql", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -40,7 +57,7 @@ async function gql(query: string, variables: Record<string, unknown>, token: str
     throw new Error(`GitHub API error ${res.status}: ${await res.text()}`);
   }
 
-  const json = (await res.json()) as object;
+  const json = await res.json();
 
   if ("errors" in json) {
     throw new Error(JSON.stringify(json.errors, null, 2));
@@ -49,103 +66,113 @@ async function gql(query: string, variables: Record<string, unknown>, token: str
   return json;
 }
 
-async function fetchUserData(login: string, token: string) {
-  const repos: RepoNode[] = [];
-  let cursor: string | null | undefined;
+const USER_QUERY = `
+  query ($login: String!) {
+    user(login: $login) {
+      name
+      login
+      bio
+      createdAt
 
-  let name: string | undefined;
-  let userLogin: string;
-  let bio: string | undefined;
+      followers { totalCount }
+      following { totalCount }
 
-  let followers = 0;
-  let following = 0;
-  let contributions = 0;
-  let repositoryCount = 0;
+      contributionsCollection {
+        contributionCalendar {
+          totalContributions
+        }
+      }
 
-  while (true) {
-    const query = `
-      query ($login: String!, $cursor: String) {
-        user(login: $login) {
+      repositories {
+        totalCount
+      }
+    }
+  }
+`;
+
+const REPOS_QUERY = `
+  query ($login: String!, $cursor: String) {
+    user(login: $login) {
+      repositories(
+        first: 100
+        after: $cursor
+        ownerAffiliations: OWNER
+      ) {
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
+
+        nodes {
           name
-          login
-          bio
+          stargazerCount
+          forkCount
+          createdAt
+          pushedAt
 
-          followers {
-            totalCount
-          }
+          watchers { totalCount }
 
-          following {
-            totalCount
-          }
-
-          contributionsCollection {
-            contributionCalendar {
-              totalContributions
-            }
-          }
-
-          repositories(
-            first: 100
-            after: $cursor
-            ownerAffiliations: OWNER
-          ) {
-            totalCount
-
-            pageInfo {
-              hasNextPage
-              endCursor
-            }
-
-            nodes {
-              name
-              stargazerCount
-
-              primaryLanguage {
-                name
-              }
-            }
+          primaryLanguage {
+            name
           }
         }
       }
-    `;
+    }
+  }
+`;
 
-    const json = (await gql(query, { login, cursor }, token)) as UserResponse;
+async function fetchUserData(login: string, token: string) {
+  const userJson = await gql<UserQueryResponse>(USER_QUERY, { login }, token);
+  const user = userJson.data.user;
+  if (!user) throw new Error("User not found");
+  return user;
+}
 
-    const user = json.data.user;
-    const repoData = user.repositories;
+async function fetchRepoData(login: string, token: string) {
+  const repos: RepoNode[] = [];
+  let cursor: string | null = null;
 
-    name = user.name || undefined;
-    userLogin = user.login;
-    bio = user.bio || undefined;
-
-    followers = user.followers.totalCount;
-    following = user.following.totalCount;
-    contributions = user.contributionsCollection.contributionCalendar.totalContributions;
-    repositoryCount = repoData.totalCount;
+  while (true) {
+    const repoJson = (await gql(REPOS_QUERY, { login, cursor }, token)) as RepoQueryResponse;
+    const repoData = repoJson.data.user?.repositories;
+    if (!repoData) break;
 
     repos.push(...repoData.nodes);
 
-    if (!repoData.pageInfo.hasNextPage) {
-      break;
-    }
-
+    if (!repoData.pageInfo.hasNextPage) break;
     cursor = repoData.pageInfo.endCursor;
   }
 
-  return {
-    name,
-    login: userLogin,
-    bio,
-    followers,
-    following,
-    contributions,
-    repositoryCount,
-    repos,
-  };
+  return repos;
 }
 
 function totalStars(repos: RepoNode[]) {
-  return repos.reduce((sum, repo) => sum + repo.stargazerCount, 0);
+  return repos.reduce((sum, r) => sum + r.stargazerCount, 0);
+}
+
+function totalForks(repos: RepoNode[]) {
+  return repos.reduce((sum, r) => sum + r.forkCount, 0);
+}
+
+function totalWatchers(repos: RepoNode[]) {
+  return repos.reduce((sum, r) => sum + r.watchers.totalCount, 0);
+}
+
+function avgStarsPerRepo(repos: RepoNode[]) {
+  return repos.length ? totalStars(repos) / repos.length : 0;
+}
+
+function activeRepos(repos: RepoNode[]) {
+  const cutoff = Date.now() - 1000 * 60 * 60 * 24 * 180;
+  return repos.filter((r) => new Date(r.pushedAt).getTime() > cutoff).length;
+}
+
+function createdAt(createdAt: string) {
+  return new Date(createdAt).toLocaleDateString("en-US", {
+    month: "short",
+    day: "2-digit",
+    year: "numeric",
+  });
 }
 
 function topLanguage(repos: RepoNode[]) {
@@ -162,6 +189,10 @@ function topLanguage(repos: RepoNode[]) {
   return [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
 }
 
+function languageDiversity(repos: RepoNode[]) {
+  return new Set(repos.map((r) => r.primaryLanguage?.name).filter(Boolean)).size;
+}
+
 function highestStarRepo(repos: RepoNode[]) {
   return repos.reduce<RepoNode | undefined>((best, repo) => {
     if (!best || repo.stargazerCount > best.stargazerCount) {
@@ -172,27 +203,23 @@ function highestStarRepo(repos: RepoNode[]) {
 }
 
 export async function getGitHubStats(login: string, token: string) {
-  const {
-    name,
-    login: actualLogin,
-    bio,
-    followers,
-    following,
-    contributions,
-    repositoryCount,
-    repos,
-  } = await fetchUserData(login, token);
-
+  const [user, repos] = await Promise.all([fetchUserData(login, token), fetchRepoData(login, token)]);
   return {
-    name,
-    login: `@${actualLogin}`,
-    bio,
-    followers,
-    following,
-    contributions,
-    repositories: repositoryCount,
+    name: user.name,
+    login: `@${user.login}`,
+    bio: user.bio,
+    followers: user.followers.totalCount,
+    following: user.following.totalCount,
+    contributions: user.contributionsCollection.contributionCalendar.totalContributions,
     stars: totalStars(repos),
+    repositories: user.repositories.totalCount,
     topLanguage: topLanguage(repos),
     highestStarRepo: highestStarRepo(repos),
+    createdAt: createdAt(user.createdAt),
+    forks: totalForks(repos),
+    watchers: totalWatchers(repos),
+    averageStars: avgStarsPerRepo(repos),
+    activeRepos: activeRepos(repos),
+    languageDiversity: languageDiversity(repos),
   };
 }

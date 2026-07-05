@@ -61,10 +61,10 @@ export function ConfigPage(selectedStats: SyncConfig, disableSave?: boolean, sel
   ];
 }
 
-function StatButton(stat = "empty_slot", index: number, selectedStats: SyncConfig) {
+function StatButton(stat: SyncStatKey | undefined, index: number, selectedStats: SyncConfig) {
   return Button({
     custom_id: `stat-${index}-${selectedStats}`,
-    label: stat[0]?.toUpperCase() + stat.replaceAll("_", " ").slice(1),
+    label: stat ? statDefinitions[stat].title : "Empty slot",
     style: "Secondary",
   });
 }
