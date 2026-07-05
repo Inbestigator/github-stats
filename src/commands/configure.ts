@@ -53,7 +53,7 @@ export function ConfigPage(selectedStats: SyncConfig, disableSave?: boolean, sel
       ),
     ),
     Section(
-      ["-# Saving will not update your widget, you have to run `/sync` for your changes to appear"],
+      ["-# Saving will not update your widget"],
       Button({
         custom_id: `save-stats-${selectedStats}`,
         label: "Save",
