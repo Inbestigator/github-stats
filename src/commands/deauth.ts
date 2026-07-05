@@ -23,12 +23,9 @@ export default async function (interaction: CommandInteraction<typeof config>) {
     body: JSON.stringify({ access_token: user.github_token }),
   });
 
-  if (!res.ok) {
-    const text = await res.text();
-    return interaction.editReply(`Failed to revoke GitHub token: ${res.status} ${text}`);
-  }
-
   await deleteUser(interaction.user.id);
 
-  return interaction.editReply("You've been removed and token revoked.");
+  return interaction.editReply(
+    `You've been removed ${res.ok ? "and the GitHub token was" : "but the GitHub token wasn't"} revoked`,
+  );
 }

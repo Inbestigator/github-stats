@@ -30,7 +30,7 @@ export function LinkPage(state: string, stage = 1) {
     };
   }
   return {
-    content: "No linked GitHub account yet, click these to setup your widget.",
+    content: "Your GitHub account hasn't been linked yet, click these links to setup your widget",
     components: [
       ActionRow(
         Button({
