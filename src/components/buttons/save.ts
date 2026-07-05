@@ -10,6 +10,6 @@ export default async function (interaction: MessageComponentInteraction, props: 
   const selectedStats = props.selectedStats.split(",").map((v) => v || undefined) as SyncConfig;
   const components = ConfigPage(selectedStats, true);
   await setUserConfig(interaction.user.id, selectedStats);
-  abseil(components).initial("Container").last("ActionRow")?.child("Button").update({ label: "Saved settings" });
+  abseil(components).initial("Container").last("Section")?.accessory("Button").update({ label: "Saved settings" });
   return interaction.update({ components });
 }

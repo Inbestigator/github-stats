@@ -4,6 +4,7 @@ import {
   type CommandConfig,
   type CommandInteraction,
   Container,
+  Section,
   SelectMenu,
   SelectMenuOption,
 } from "dressed";
@@ -51,7 +52,8 @@ export function ConfigPage(selectedStats: SyncConfig, disableSave?: boolean, sel
         ),
       ),
     ),
-    ActionRow(
+    Section(
+      ["-# Saving will not update your widget, you have to run `/sync` for your changes to appear"],
       Button({
         custom_id: `save-stats-${selectedStats}`,
         label: "Save",

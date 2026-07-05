@@ -14,7 +14,7 @@ export const statDefinitions = {
   repositories: { title: "Repositories", value: (data) => data.repositories.toLocaleString() },
   active_repos: { title: "Active repositories", value: (data) => data.activeRepos.toLocaleString() },
   most_starred: { title: "Most starred", value: (data) => data.highestStarRepo },
-  languages: { title: "Used languages", value: (data) => data.languageDiversity.toLocaleString() },
+  languages: { title: "Languages used", value: (data) => data.languageDiversity.toLocaleString() },
   favourite_language: { title: "Favourite language", value: (data) => data.topLanguage },
 } satisfies Record<
   string,
