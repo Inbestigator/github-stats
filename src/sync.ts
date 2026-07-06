@@ -1,6 +1,7 @@
 import { botEnv, callDiscord } from "dressed/utils";
+import Mustache from "mustache";
 import { DEFAULT_USER_CONFIG, type SyncConfig, setCachedStats } from "./db.ts";
-import { getStats, populateBioLines, titles, titleToValue } from "./stats/index.ts";
+import { getStats, populateBioLines, titles, titleToValue, type VariableKey } from "./stats/index.ts";
 
 export default async function sync(
   userId: string,
@@ -9,7 +10,12 @@ export default async function sync(
   config: SyncConfig = { ...DEFAULT_USER_CONFIG },
   updateCache?: boolean,
 ) {
-  const data = await getStats(login, token);
+  const data = await getStats(login, token, [
+    ...config.stats.filter((s) => !!s),
+    ...Mustache.parse(config.bio)
+      .filter((token) => token[0] === "name")
+      .map((token) => token[1] as VariableKey),
+  ]);
   const dynamic: { type: number; name: string; value: string | number }[] = [
     { type: 1, name: "login", value: data.github.login },
   ];

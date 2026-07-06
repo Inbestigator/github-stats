@@ -23,16 +23,16 @@ export const titles: Record<VariableKey, string> = {
   "user.followers": "Followers",
   "user.following": "Following",
   "user.contributions": "Contributions this year",
-  "user.topLanguage": "Favourite language",
+  "user.repos": "Repositories",
   "user.createdAt": "Created account",
-  "repos.count": "Repositories",
   "repos.stars": "Stars",
   "repos.mostStarred": "Most starred",
   "repos.forks": "Forks",
   "repos.watchers": "Watchers",
   "repos.averageStars": "Average star count",
-  "repos.activeRepos": "Active repositories",
-  "repos.languageDiversity": "Languages used",
+  "repos.active": "Active repositories",
+  "repos.topLanguage": "Favourite language",
+  "repos.languages": "Languages used",
 };
 
 export function generateView(stats: Stats) {
@@ -45,18 +45,18 @@ export function generateView(stats: Stats) {
       followers: stats.github.followers.toLocaleString(),
       following: stats.github.following.toLocaleString(),
       contributions: stats.github.contributions.toLocaleString(),
-      topLanguage: stats.github.topLanguage,
+      repos: stats.github.repositories.toLocaleString(),
       createdAt: stats.github.createdAt,
     },
     repos: {
-      count: stats.github.repositories.toLocaleString(),
       stars: stats.github.stars.toLocaleString(),
       mostStarred: stats.github.highestStarRepo,
       forks: stats.github.forks.toLocaleString(),
       watchers: stats.github.watchers.toLocaleString(),
       averageStars: stats.github.averageStars.toFixed(1),
-      activeRepos: stats.github.activeRepos.toLocaleString(),
-      languageDiversity: stats.github.languageDiversity.toLocaleString(),
+      active: stats.github.activeRepos.toLocaleString(),
+      topLanguage: stats.github.topLanguage,
+      languages: stats.github.languageDiversity.toLocaleString(),
     },
   } satisfies View;
 }
@@ -75,6 +75,6 @@ export function titleToValue(variable: VariableKey, stats: Stats) {
 
 export type Stats = { github: Awaited<ReturnType<typeof getGitHubStats>> };
 
-export async function getStats(login: string, token: string): Promise<Stats> {
-  return { github: await getGitHubStats(login, token) };
+export async function getStats(login: string, token: string, stats: VariableKey[]): Promise<Stats> {
+  return { github: await getGitHubStats(login, token, stats) };
 }

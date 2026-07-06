@@ -26,7 +26,7 @@ export interface SyncConfig {
 }
 
 export const DEFAULT_USER_CONFIG = Object.freeze({
-  stats: ["user.followers", "user.following", "user.contributions", "repos.stars", "repos.count", "user.topLanguage"],
+  stats: ["user.followers", "user.following", "user.contributions", "repos.stars", "user.repos", "repos.topLanguage"],
   avatar: true,
   bio: "{{user.name}}\n{{user.bio}}\n{{user.login}}",
 } satisfies SyncConfig);

@@ -204,8 +204,11 @@ function highestStarRepo(repos: RepoNode[]) {
   }, undefined)?.name;
 }
 
-export async function getGitHubStats(login: string, token: string) {
-  const [user, repos] = await Promise.all([fetchUserData(login, token), fetchRepoData(login, token)]);
+export async function getGitHubStats(login: string, token: string, include: string[]) {
+  const [user, repos] = await Promise.all([
+    fetchUserData(login, token),
+    include.some((s) => s.startsWith("repos.")) ? fetchRepoData(login, token) : [],
+  ]);
   return {
     name: user.name,
     login: `@${user.login}`,
@@ -214,15 +217,16 @@ export async function getGitHubStats(login: string, token: string) {
     followers: user.followers.totalCount,
     following: user.following.totalCount,
     contributions: user.contributionsCollection.contributionCalendar.totalContributions,
-    stars: totalStars(repos),
     repositories: user.repositories.totalCount,
-    topLanguage: topLanguage(repos),
-    highestStarRepo: highestStarRepo(repos),
     createdAt: createdAt(user.createdAt),
+
+    stars: totalStars(repos),
+    highestStarRepo: highestStarRepo(repos),
     forks: totalForks(repos),
     watchers: totalWatchers(repos),
     averageStars: avgStarsPerRepo(repos),
     activeRepos: activeRepos(repos),
+    topLanguage: topLanguage(repos),
     languageDiversity: languageDiversity(repos),
   };
 }
