@@ -115,14 +115,14 @@ export function ConfigPage(
 function encodeEmoji(input: string) {
   return Array.from(input)
     .map((char) => {
-      if (/^[A-Za-z0-9]$/.test(char)) return char;
-      return `_${char.codePointAt(0)?.toString(36)}`;
+      if (/^[0-9a-zA-Z]$/.test(char)) return char;
+      return `_${char.codePointAt(0)?.toString(36)}_`;
     })
     .join("");
 }
 
 function decodeEmoji(input: string) {
-  return input.replace(/_([0-9a-fA-F]{,4})/g, (_, hex) => {
+  return input.replace(/_([0-9a-zA-Z]{1,4})_/g, (_, hex) => {
     const codePoint = Number.parseInt(hex, 36);
     return String.fromCodePoint(codePoint);
   });
