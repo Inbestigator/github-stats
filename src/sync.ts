@@ -22,8 +22,8 @@ export const statDefinitions = {
   { title: string; value: (data: Awaited<ReturnType<typeof getGitHubStats>>) => string | undefined }
 >;
 
-export function createMustacheView(stats: Awaited<ReturnType<typeof getGitHubStats>>) {
-  return {
+export function populateBioLines(bio: string, stats: Awaited<ReturnType<typeof getGitHubStats>>) {
+  const view = {
     user: {
       name: stats.name,
       login: stats.login,
@@ -46,6 +46,10 @@ export function createMustacheView(stats: Awaited<ReturnType<typeof getGitHubSta
       languageDiversity: stats.languageDiversity,
     },
   };
+  return bio.split("\n").map((l) => {
+    const v = Mustache.render(l, view);
+    return v.length > 100 ? `${v.slice(0, 99)}…` : v || undefined;
+  }) as [string?, string?, string?];
 }
 
 export default async function sync(
@@ -64,20 +68,7 @@ export default async function sync(
     dynamic.push({ type: 3, name: "avatar", value: { url: data.avatarUrl } as never });
   }
 
-  const [bio1, bio2, bio3] = config.bio.split("\n");
-  const view = createMustacheView(data);
-
-  if (bio1) {
-    dynamic.push({ type: 1, name: "bio-1", value: Mustache.render(bio1, view) });
-  }
-
-  if (bio2) {
-    dynamic.push({ type: 1, name: "bio-2", value: Mustache.render(bio2, view) });
-  }
-
-  if (bio3) {
-    dynamic.push({ type: 1, name: "bio-3", value: Mustache.render(bio3, view) });
-  }
+  populateBioLines(config.bio, data).map((l, i) => l && dynamic.push({ type: 1, name: `bio-${i + 1}`, value: l }));
 
   for (const [index, stat] of config.stats.entries()) {
     if (!stat) continue;

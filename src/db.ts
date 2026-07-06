@@ -146,9 +146,10 @@ export async function setUserConfig(discordId: string, { avatar, stats, bio }: S
     sql: `
       INSERT INTO user_config (discord_id, stats, avatar, bio)
       VALUES (?, ?, ?, ?)
-      ON CONFLICT(discord_id) DO UPDATE SET stats = excluded.stats
-      ON CONFLICT(discord_id) DO UPDATE SET avatar = excluded.avatar
-      ON CONFLICT(discord_id) DO UPDATE SET bio = excluded.bio
+      ON CONFLICT(discord_id) DO UPDATE SET
+        stats = excluded.stats,
+        avatar = excluded.avatar,
+        bio = excluded.bio
     `,
     args: [discordId, JSON.stringify(stats), Number(avatar), bio],
   });

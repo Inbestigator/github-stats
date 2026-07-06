@@ -13,9 +13,8 @@ import {
   TextDisplay,
   Thumbnail,
 } from "dressed";
-import Mustache from "mustache";
 import { getUser, getUserConfig, type SyncConfig, type SyncStatKey, type UserRecord } from "../db.ts";
-import { createMustacheView, statDefinitions } from "../sync.ts";
+import { populateBioLines, statDefinitions } from "../sync.ts";
 
 export const config = {
   description: "Reorder your widget",
@@ -63,19 +62,14 @@ export function ConfigPage(
   { config, cached_stats, originalConfig }: ReturnType<typeof getEncodedInfo>,
   selectIndex?: number,
 ) {
-  const [bio1, bio2, bio3] = config.bio.split("\n");
-  const view = createMustacheView(cached_stats);
+  const [bio1, bio2, bio3] = populateBioLines(config.bio, cached_stats);
   return [
     Container(
       TextDisplay(
         `<:${encodeEmoji(JSON.stringify({ config, cached_stats, originalConfig }))}:1523487044805066782> GitHub Stats`,
       ),
       Section(
-        [
-          bio1 ? `## ${Mustache.render(bio1, view)}` : "⠀",
-          bio2 && Mustache.render(bio2, view),
-          bio3 && Mustache.render(bio3, view),
-        ].filter(Boolean),
+        [bio1 ? `## ${bio1}` : "⠀", bio2, bio3].filter(Boolean) as string[],
         Thumbnail(config.avatar ? cached_stats.avatarUrl : process.env.ASSET_GH_ICON_URL!),
       ),
       ...chunk(config.stats, 3).map((row, rowIndex) =>
