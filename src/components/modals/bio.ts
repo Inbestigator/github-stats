@@ -14,7 +14,7 @@ export default function (interaction: ModalSubmitInteraction) {
       .split("\n")
       .slice(0, 3)
       .map((l) => (l.length > 100 ? l.slice(0, 101) : l))
-      .join("\n") ?? DEFAULT_USER_CONFIG.bio;
+      .join("\n") || DEFAULT_USER_CONFIG.bio;
 
   return interaction.update({ components: ConfigPage(info) });
 }
