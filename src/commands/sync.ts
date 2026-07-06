@@ -18,7 +18,13 @@ export default async function (interaction: CommandInteraction<typeof config>) {
     await insertPendingInit(state, interaction.user.id, interaction.token);
     return interaction.editReply(LinkPage(state));
   }
-  await sync(interaction.user.id, user.github_login, user.github_token, selectedStats);
+  await sync(
+    interaction.user.id,
+    user.github_login,
+    user.github_token,
+    selectedStats,
+    Date.now() - (user.profile?.savedAt ?? 0) > 30 * 60 * 1000,
+  );
   return interaction.editReply("Your stats have been synced");
 }
 

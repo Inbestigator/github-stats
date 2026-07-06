@@ -14,6 +14,7 @@ interface UserQueryResponse {
       name: string | null;
       login: string;
       bio: string | null;
+      avatarUrl: string;
       createdAt: string;
       followers: { totalCount: number };
       following: { totalCount: number };
@@ -72,6 +73,7 @@ const USER_QUERY = `
       name
       login
       bio
+      avatarUrl
       createdAt
 
       followers { totalCount }
@@ -208,6 +210,7 @@ export async function getGitHubStats(login: string, token: string) {
     name: user.name,
     login: `@${user.login}`,
     bio: user.bio,
+    avatarUrl: user.avatarUrl,
     followers: user.followers.totalCount,
     following: user.following.totalCount,
     contributions: user.contributionsCollection.contributionCalendar.totalContributions,

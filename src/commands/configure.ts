@@ -1,12 +1,15 @@
+import abseil from "abseil";
 import {
   ActionRow,
   Button,
   type CommandConfig,
   type CommandInteraction,
   Container,
+  type MessageComponentInteraction,
   Section,
   SelectMenu,
   SelectMenuOption,
+  Thumbnail,
 } from "dressed";
 import { getUser, getUserConfig, type SyncConfig, type SyncStatKey } from "../db.ts";
 import { statDefinitions } from "../sync.ts";
@@ -21,20 +24,27 @@ export default async function (interaction: CommandInteraction<typeof config>) {
     getUserConfig(interaction.user.id),
     interaction.deferReply({ ephemeral: true }),
   ]);
-  if (!user) {
-    return interaction.editReply({
-      content: "No linked GitHub account yet, `/sync` to get started.",
-    });
-  }
+  if (!user) return interaction.editReply("Your GitHub account hasn't been linked yet, `/sync` to get started");
   return interaction.editReply({
-    components: ConfigPage(selectedStats, true),
+    components: ConfigPage(selectedStats, true, undefined, user.profile ?? undefined),
     flags: ["IsComponentsV2"],
   });
 }
 
-export function ConfigPage(selectedStats: SyncConfig, disableSave?: boolean, selectIndex?: number) {
+export function ConfigPage(
+  selectedStats: SyncConfig,
+  disableSave?: boolean,
+  selectIndex?: number,
+  profile = {
+    name: "The Octocat" as string | null,
+    login: "@octocat",
+    bio: "There once was..." as string | null,
+    avatarUrl: "https://avatars.githubusercontent.com/u/583231?v=4",
+  },
+) {
   return [
     Container(
+      Section([`## ${profile.name}`, profile.bio ?? "⠀", profile.login], Thumbnail(profile.avatarUrl)),
       ...chunk(selectedStats, 3).map((row, rowIndex) =>
         ActionRow(
           ...(selectIndex !== undefined && rowIndex === Math.floor(selectIndex / 3)
@@ -69,6 +79,21 @@ function StatButton(stat: SyncStatKey | undefined, index: number, selectedStats:
     label: stat ? statDefinitions[stat].title : "Empty slot",
     style: "Secondary",
   });
+}
+
+export function patchWidgetTop(
+  components: NonNullable<MessageComponentInteraction["message"]["components"]>,
+  message: MessageComponentInteraction["message"],
+) {
+  abseil(components)
+    .initial("Container")
+    .child("Section")
+    .update(
+      abseil(message.components ?? [])
+        .initial("Container")
+        .child("Section").value,
+    );
+  return components;
 }
 
 const chunk = <T>(arr: T[], size: number) =>

@@ -1,5 +1,5 @@
 import { botEnv, callDiscord } from "dressed/utils";
-import { DEFAULT_SYNC_STATS, type SyncConfig } from "./db.ts";
+import { DEFAULT_SYNC_STATS, type SyncConfig, setCachedProfile } from "./db.ts";
 import { getGitHubStats } from "./stats.ts";
 
 export const statDefinitions = {
@@ -26,10 +26,12 @@ export default async function sync(
   login: string,
   token: string,
   selectedStats: SyncConfig = [...DEFAULT_SYNC_STATS],
+  updateCache?: boolean,
 ) {
   const data = await getGitHubStats(login, token);
   const dynamic: { type: number; name: string; value: string | number }[] = [
     { type: 1, name: "login", value: data.login },
+    { type: 3, name: "avatar", value: { url: data.avatarUrl } as never },
   ];
 
   if (data.name) {
@@ -44,23 +46,19 @@ export default async function sync(
     if (!stat) continue;
 
     const definition = statDefinitions[stat];
-    dynamic.push({
-      type: 1,
-      name: `stat${index + 1}-label`,
-      value: definition.title,
-    });
+    dynamic.push({ type: 1, name: `stat${index + 1}-label`, value: definition.title });
     const value = definition.value(data);
     if (value) {
-      dynamic.push({
-        name: `stat${index + 1}-value`,
-        type: 1,
-        value,
-      });
+      dynamic.push({ name: `stat${index + 1}-value`, type: 1, value });
     }
   }
 
-  await callDiscord(`/applications/${botEnv.DISCORD_APP_ID}/users/${userId}/identities/0/profile`, {
-    method: "PATCH",
-    body: { data: { dynamic } },
-  });
+  await Promise.all([
+    callDiscord(`/applications/${botEnv.DISCORD_APP_ID}/users/${userId}/identities/0/profile`, {
+      method: "PATCH",
+      body: { data: { dynamic } },
+    }),
+    updateCache &&
+      setCachedProfile(userId, { name: data.name, login: data.login, bio: data.bio, avatarUrl: data.avatarUrl }),
+  ]);
 }

@@ -1,4 +1,5 @@
 import { createClient } from "@libsql/client";
+import type { getGitHubStats } from "./stats.ts";
 import type { statDefinitions } from "./sync.ts";
 
 export const libsql = createClient({
@@ -10,6 +11,9 @@ export interface UserRecord {
   discord_id: string;
   github_login: string;
   github_token: string;
+  profile:
+    | (Pick<Awaited<ReturnType<typeof getGitHubStats>>, "name" | "login" | "bio" | "avatarUrl"> & { savedAt: number })
+    | null;
 }
 
 export interface PendingInitRecord {
@@ -36,7 +40,8 @@ async function ensureSchema() {
     CREATE TABLE IF NOT EXISTS user (
       discord_id TEXT PRIMARY KEY,
       github_login TEXT NOT NULL,
-      github_token TEXT NOT NULL
+      github_token TEXT NOT NULL,
+      profile JSON
     )
   `);
 
@@ -51,7 +56,8 @@ async function ensureSchema() {
     CREATE TABLE IF NOT EXISTS pending_init (
       state TEXT PRIMARY KEY,
       discord_id TEXT,
-      interaction_token TEXT
+      interaction_token TEXT,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
   `);
 }
@@ -71,13 +77,23 @@ export async function upsertUser(discordId: string, githubLogin: string, githubT
   });
 }
 
+export async function setCachedProfile(discordId: string, profile: Omit<UserRecord["profile"], "savedAt">) {
+  await libsql.execute({
+    sql: `UPDATE user SET profile = ? WHERE discord_id = ?`,
+    args: [JSON.stringify({ ...profile, savedAt: Date.now() }), discordId],
+  });
+}
+
 export async function getUser(discordId: string) {
   const result = await libsql.execute({
-    sql: `SELECT discord_id, github_login, github_token FROM user WHERE discord_id = ? limit 1`,
+    sql: `SELECT discord_id, github_login, github_token, profile FROM user WHERE discord_id = ? LIMIT 1`,
     args: [discordId],
   });
 
   const row = result.rows[0] as unknown as UserRecord | undefined;
+
+  if (row) row.profile = JSON.parse(row.profile as unknown as string);
+
   return row;
 }
 
@@ -133,7 +149,7 @@ export async function setUserConfig(discordId: string, stats: SyncConfig) {
 
 export async function getPendingInit(state: string) {
   const result = await libsql.execute({
-    sql: `SELECT state, discord_id, interaction_token FROM pending_init WHERE state = ? limit 1`,
+    sql: `SELECT state, discord_id, interaction_token FROM pending_init WHERE state = ? LIMIT 1`,
     args: [state],
   });
 

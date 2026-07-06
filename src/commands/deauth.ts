@@ -9,7 +9,7 @@ export default async function (interaction: CommandInteraction<typeof config>) {
   const [user] = await Promise.all([getUser(interaction.user.id), interaction.deferReply({ ephemeral: true })]);
 
   if (!user?.github_token) {
-    return interaction.editReply("No linked GitHub account");
+    return interaction.editReply("Your GitHub account hasn't been linked yet");
   }
 
   const res = await fetch(`https://api.github.com/applications/${process.env.GITHUB_CLIENT_ID}/grant`, {
