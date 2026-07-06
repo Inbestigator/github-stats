@@ -157,9 +157,7 @@ export async function getPendingInit(state: string) {
     sql: `SELECT state, discord_id, interaction_token FROM pending_init WHERE state = ? LIMIT 1`,
     args: [state],
   });
-
-  const row = result.rows[0] as unknown as PendingInitRecord | undefined;
-  return row;
+  return result.rows[0] as unknown as PendingInitRecord | undefined;
 }
 
 export async function insertPendingInit(state: string, discordId: string, interactionToken: string) {
@@ -170,8 +168,6 @@ export async function insertPendingInit(state: string, discordId: string, intera
 }
 
 export async function deletePendingInit(state: string) {
-  await libsql.execute({
-    sql: `DELETE FROM pending_init WHERE state = ?`,
-    args: [state],
-  });
+  const result = await libsql.execute({ sql: `DELETE FROM pending_init WHERE state = ? RETURNING *`, args: [state] });
+  return result.rows[0] as unknown as PendingInitRecord | undefined;
 }
