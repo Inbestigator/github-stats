@@ -13,8 +13,8 @@ import {
   TextDisplay,
   Thumbnail,
 } from "dressed";
-import { getUser, getUserConfig, type SyncConfig, type SyncStatKey, type UserRecord } from "../db.ts";
-import { populateBioLines, statDefinitions } from "../sync.ts";
+import { getUser, getUserConfig, type SyncConfig, type UserRecord } from "../db.ts";
+import { populateBioLines, titles, type VariableKey } from "../stats/index.ts";
 
 export const config = {
   description: "Reorder your widget",
@@ -38,23 +38,25 @@ export default async function (interaction: CommandInteraction<typeof config>) {
 }
 
 const DEFAULT_STATS = {
-  name: "The Octocat",
-  login: "@octocat",
-  bio: "",
-  avatarUrl: "https://avatars.githubusercontent.com/u/583231?u=a59fef2a493e2b67dd13754231daf220c82ba84d&v=4",
-  followers: 23183,
-  following: 9,
-  contributions: 0,
-  stars: 21656,
-  repositories: 203,
-  topLanguage: "HTML",
-  highestStarRepo: "Spoon-Knife",
-  createdAt: "Jan 25, 2011",
-  forks: 165359,
-  watchers: 2897,
-  averageStars: 2707,
-  activeRepos: 0,
-  languageDiversity: 3,
+  github: {
+    name: "The Octocat",
+    login: "@octocat",
+    bio: "",
+    avatarUrl: "https://avatars.githubusercontent.com/u/583231?u=a59fef2a493e2b67dd13754231daf220c82ba84d&v=4",
+    followers: 23183,
+    following: 9,
+    contributions: 0,
+    stars: 21656,
+    repositories: 203,
+    topLanguage: "HTML",
+    highestStarRepo: "Spoon-Knife",
+    createdAt: "Jan 25, 2011",
+    forks: 165359,
+    watchers: 2897,
+    averageStars: 2707,
+    activeRepos: 0,
+    languageDiversity: 3,
+  },
   savedAt: Date.now(),
 };
 
@@ -70,7 +72,7 @@ export function ConfigPage(
       ),
       Section(
         [bio1 ? `## ${bio1}` : "⠀", bio2, bio3].filter(Boolean) as string[],
-        Thumbnail(config.avatar ? cached_stats.avatarUrl : process.env.ASSET_GH_ICON_URL!),
+        Thumbnail(config.avatar ? cached_stats.github.avatarUrl : process.env.ASSET_GH_ICON_URL!),
       ),
       ...chunk(config.stats, 3).map((row, rowIndex) =>
         ActionRow(
@@ -79,9 +81,9 @@ export function ConfigPage(
                 SelectMenu({
                   type: "String",
                   custom_id: `config-stat-select-${selectIndex}`,
-                  options: Object.entries(statDefinitions)
-                    .filter(([k]) => !config.stats.includes(k as SyncStatKey))
-                    .map(([k, v]) => SelectMenuOption(v.title, k)),
+                  options: Object.entries(titles)
+                    .filter(([k]) => !config.stats.includes(k as VariableKey))
+                    .map(([k, v]) => SelectMenuOption(v, k)),
                   placeholder: `Select the data for slot ${selectIndex + 1}`,
                 }),
               ]
@@ -126,10 +128,10 @@ function decodeEmoji(input: string) {
   });
 }
 
-function StatButton(stat: SyncStatKey | undefined, index: number) {
+function StatButton(stat: VariableKey | undefined, index: number) {
   return Button({
     custom_id: `config-stat-${index}`,
-    label: stat ? statDefinitions[stat].title : "Empty slot",
+    label: stat ? titles[stat] : "Empty slot",
     style: "Secondary",
   });
 }

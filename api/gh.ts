@@ -13,10 +13,7 @@ export async function GET(req: Request) {
     const [res, pendingInit] = await Promise.all([
       fetch("https://github.com/login/oauth/access_token", {
         method: "POST",
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
-        },
+        headers: { Accept: "application/json", "Content-Type": "application/json" },
         body: JSON.stringify({
           client_id: process.env.GITHUB_CLIENT_ID,
           client_secret: process.env.GITHUB_CLIENT_SECRET,
@@ -47,20 +44,20 @@ export async function GET(req: Request) {
         ]);
         if (upsertRes.status === "rejected") {
           return Response.redirect(
-            `https://gstats-widget.vercel.app/error.html?m=${encodeURIComponent("There was an error saving your details or syncing your stats. Please try again")}`,
+            `https://stat-widget.vercel.app/error.html?m=${encodeURIComponent("There was an error saving your details or syncing your stats. Please try again")}`,
           );
         }
-        return Response.redirect("https://gstats-widget.vercel.app/success.html");
+        return Response.redirect("https://stat-widget.vercel.app/success.html");
       }
     } else if (pendingInit) {
       await deletePendingInit(state);
       return Response.redirect(
-        `https://gstats-widget.vercel.app/error.html?m=${encodeURIComponent("There was an error fetching your access token. Please run `/sync` to try again")}`,
+        `https://stat-widget.vercel.app/error.html?m=${encodeURIComponent("There was an error fetching your access token. Please run `/sync` to try again")}`,
       );
     }
   }
 
   return Response.redirect(
-    `https://gstats-widget.vercel.app/error.html?m=${encodeURIComponent("Your session has expired. Please run `/sync` to try again")}`,
+    `https://stat-widget.vercel.app/error.html?m=${encodeURIComponent("Your session has expired. Please run `/sync` to try again")}`,
   );
 }

@@ -1,6 +1,5 @@
 import { createClient } from "@libsql/client";
-import type { getGitHubStats } from "./stats.ts";
-import type { statDefinitions } from "./sync.ts";
+import type { Stats, VariableKey } from "./stats/index.ts";
 
 export const libsql = createClient({
   url: process.env.DB_URL ?? "file:local.db",
@@ -11,7 +10,7 @@ export interface UserRecord {
   discord_id: string;
   github_login: string;
   github_token: string;
-  cached_stats: (Awaited<ReturnType<typeof getGitHubStats>> & { savedAt: number }) | null;
+  cached_stats: (Stats & { savedAt: number }) | null;
 }
 
 export interface PendingInitRecord {
@@ -20,16 +19,14 @@ export interface PendingInitRecord {
   interaction_token: string;
 }
 
-export type SyncStatKey = keyof typeof statDefinitions;
-
 export interface SyncConfig {
-  stats: (SyncStatKey | undefined)[];
+  stats: (VariableKey | undefined)[];
   avatar: boolean;
   bio: string;
 }
 
 export const DEFAULT_USER_CONFIG = Object.freeze({
-  stats: ["fs", "fg", "cb", "s", "r", "fl"],
+  stats: ["user.followers", "user.following", "user.contributions", "repos.stars", "repos.count", "user.topLanguage"],
   avatar: true,
   bio: "{{user.name}}\n{{user.bio}}\n{{user.login}}",
 } satisfies SyncConfig);
@@ -107,7 +104,7 @@ export async function deleteUser(discordId: string) {
 
 function normalizeConfig(config: unknown): SyncConfig {
   if (typeof config === "object" && config !== null && "stats" in config && Array.isArray(config.stats)) {
-    const normalized = config.stats.slice(0, 6) as Array<SyncStatKey | undefined>;
+    const normalized = config.stats.slice(0, 6) as SyncConfig["stats"];
 
     while (normalized.length < 6) {
       normalized.push(undefined);

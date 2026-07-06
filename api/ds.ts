@@ -16,11 +16,11 @@ export async function GET(req: Request) {
         "@original",
         LinkPage(pendingInit.state, 2),
       );
-      return Response.redirect("https://gstats-widget.vercel.app/success.html");
+      return Response.redirect("https://stat-widget.vercel.app/success.html");
     }
   }
 
   return Response.redirect(
-    `https://gstats-widget.vercel.app/error.html?m=${encodeURIComponent("Your session has expired. Please run `/sync` to try again")}`,
+    `https://stat-widget.vercel.app/error.html?m=${encodeURIComponent("Your session has expired. Please run `/sync` to try again")}`,
   );
 }
